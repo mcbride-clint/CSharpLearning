@@ -1,0 +1,90 @@
+@model BookLibrary.ViewModels.BookFormViewModel
+
+@{
+    ViewData["Title"] = "Edit Book";
+}
+
+<h2>Edit Book</h2>
+
+<div class="row">
+    <div class="col-md-7">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            @*
+                HIDDEN FIELD — asp-for="Id":
+                The book's Id must be included in the form POST so the controller knows
+                which record to update. We don't show it in a visible input (the user
+                shouldn't change it), but it must be in the form body.
+                The [Bind] attribute on the controller includes "Id" so it's bound correctly.
+            *@
+            <input type="hidden" asp-for="Id" />
+
+            <div class="mb-3">
+                <label asp-for="Title" class="form-label"></label>
+                <input asp-for="Title" class="form-control" />
+                <span asp-validation-for="Title" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="AuthorId" class="form-label"></label>
+                <select asp-for="AuthorId" asp-items="Model.Authors" class="form-select">
+                    <option value="">— Select an author —</option>
+                </select>
+                <span asp-validation-for="AuthorId" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="CategoryId" class="form-label"></label>
+                <select asp-for="CategoryId" asp-items="Model.Categories" class="form-select">
+                    <option value="">— Select a category —</option>
+                </select>
+                <span asp-validation-for="CategoryId" class="text-danger small"></span>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="PublishedYear" class="form-label"></label>
+                    <input asp-for="PublishedYear" class="form-control" type="number" />
+                    <span asp-validation-for="PublishedYear" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="PageCount" class="form-label"></label>
+                    <input asp-for="PageCount" class="form-control" type="number" />
+                    <span asp-validation-for="PageCount" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="ISBN" class="form-label"></label>
+                    <input asp-for="ISBN" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Price" class="form-label"></label>
+                    <input asp-for="Price" class="form-control" type="number" step="0.01" />
+                    <span asp-validation-for="Price" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label"></label>
+                <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+            </div>
+
+            <div class="form-check mb-3">
+                <input asp-for="IsAvailable" class="form-check-input" />
+                <label asp-for="IsAvailable" class="form-check-label"></label>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-warning">Save Changes</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

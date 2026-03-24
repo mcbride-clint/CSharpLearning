@@ -1,0 +1,39 @@
+@model BookLibrary.ViewModels.AuthorFormViewModel
+
+@{
+    ViewData["Title"] = "Edit Author";
+}
+
+<h2>Edit Author</h2>
+<div class="col-md-6">
+    <form asp-action="Edit">
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+        <input type="hidden" asp-for="Id" />
+        <div class="mb-3">
+            <label asp-for="FirstName" class="form-label"></label>
+            <input asp-for="FirstName" class="form-control" />
+            <span asp-validation-for="FirstName" class="text-danger small"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="LastName" class="form-label"></label>
+            <input asp-for="LastName" class="form-control" />
+            <span asp-validation-for="LastName" class="text-danger small"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="BirthDate" class="form-label"></label>
+            <input asp-for="BirthDate" class="form-control" type="date" />
+        </div>
+        <div class="mb-3">
+            <label asp-for="Biography" class="form-label"></label>
+            <textarea asp-for="Biography" class="form-control" rows="4"></textarea>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-warning">Save Changes</button>
+            <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

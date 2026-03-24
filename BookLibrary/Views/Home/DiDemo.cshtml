@@ -1,0 +1,90 @@
+@{
+    ViewData["Title"] = "DI Lifetime Demo";
+}
+
+<h2>Dependency Injection Lifetime Demonstration</h2>
+<p class="text-muted">
+    This page proves the three DI lifetimes by showing values from each.
+    Check the console output to see the logged GUIDs.
+</p>
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <div class="card @(ViewBag.AreSame ? "border-danger" : "border-success")">
+            <div class="card-header @(ViewBag.AreSame ? "bg-danger" : "bg-success") text-white">
+                TRANSIENT — IOperationIdService
+                @if ((bool)ViewBag.AreSame)
+                {
+                    <span class="badge bg-light text-dark ms-2">Same instance (unexpected!)</span>
+                }
+                else
+                {
+                    <span class="badge bg-light text-dark ms-2">Different instances (correct!)</span>
+                }
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr>
+                        <td>Injected in constructor</td>
+                        <td><code>@ViewBag.CtorOperationId</code></td>
+                    </tr>
+                    <tr>
+                        <td>Injected via [FromServices]</td>
+                        <td><code>@ViewBag.ActionOperationId</code></td>
+                    </tr>
+                </table>
+                <p class="mt-2 mb-0 text-muted small">
+                    Both are <strong>Transient</strong> — a new instance is created on every injection.
+                    The two GUIDs should be <strong>different</strong>, even within the same HTTP request.
+                    Refresh this page: the GUIDs change every time (new instances per request too).
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">SINGLETON — StatisticsService</div>
+            <div class="card-body">
+                @{
+                    var stats = ViewBag.Stats as BookLibrary.Interfaces.AppStatistics;
+                }
+                <p><strong>Total Requests Served:</strong> @stats?.TotalRequestsServed</p>
+                <p><strong>App Uptime:</strong> @stats?.UptimeSeconds seconds</p>
+                <p class="text-muted small mb-0">
+                    Refresh repeatedly — the counter always increments.
+                    StatisticsService has ONE instance for the app's entire lifetime.
+                    All requests share it. This counter persists across users and requests.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <div class="card border-warning">
+            <div class="card-header bg-warning">SCOPED — LibraryDbContext (via BookRepository)</div>
+            <div class="card-body">
+                <p class="mb-0 text-muted small">
+                    DbContext is Scoped — one instance per HTTP request.
+                    Within one request, HomeController, LibraryService, and BookRepository
+                    all share the same DbContext instance.
+                    Across two requests, two different DbContext instances are used.
+                    <br /><br />
+                    To see this: add logging to DbContext's constructor and watch the console —
+                    you'll see "DbContext created" once per request, not once per injection.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a asp-controller="Home" asp-action="DiDemo" class="btn btn-outline-primary">
+        Refresh (new GUIDs)
+    </a>
+    <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary ms-2">Back</a>
+</div>

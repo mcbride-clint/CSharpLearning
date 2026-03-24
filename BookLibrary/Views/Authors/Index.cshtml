@@ -1,0 +1,39 @@
+@model IEnumerable<BookLibrary.ViewModels.AuthorViewModel>
+
+@{
+    ViewData["Title"] = "Authors";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Authors</h2>
+    <a asp-action="Create" class="btn btn-primary">+ Add Author</a>
+</div>
+
+<table class="table table-hover">
+    <thead class="table-dark">
+        <tr>
+            <th>Name</th>
+            <th>Birth Date</th>
+            <th>Books</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var author in Model)
+        {
+            <tr>
+                <td>@author.FullName</td>
+                <td>@author.BirthDate.ToString("yyyy-MM-dd")</td>
+                <td>@author.BookCount</td>
+                <td class="text-end">
+                    <a asp-action="Details" asp-route-id="@author.Id" class="btn btn-sm btn-outline-info">Details</a>
+                    <a asp-action="Edit" asp-route-id="@author.Id" class="btn btn-sm btn-outline-warning">Edit</a>
+                    <form asp-action="Delete" asp-route-id="@author.Id" method="post" style="display:inline"
+                          onsubmit="return confirm('Delete @author.FullName? This will fail if they have books.')">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

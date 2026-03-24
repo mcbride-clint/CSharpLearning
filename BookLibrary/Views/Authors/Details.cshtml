@@ -1,0 +1,26 @@
+@model BookLibrary.ViewModels.AuthorViewModel
+
+@{
+    ViewData["Title"] = Model.FullName;
+}
+
+<div class="d-flex justify-content-between mb-3">
+    <h2>@Model.FullName</h2>
+    <div>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Edit</a>
+        <a asp-action="Index" class="btn btn-outline-secondary ms-1">Back</a>
+    </div>
+</div>
+
+<dl class="row">
+    <dt class="col-sm-3">Birth Date</dt>
+    <dd class="col-sm-9">@Model.BirthDate.ToString("MMMM d, yyyy")</dd>
+    <dt class="col-sm-3">Books</dt>
+    <dd class="col-sm-9">@Model.BookCount</dd>
+</dl>
+
+@if (!string.IsNullOrEmpty(Model.Biography))
+{
+    <h5>Biography</h5>
+    <p>@Model.Biography</p>
+}

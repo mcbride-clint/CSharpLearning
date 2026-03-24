@@ -1,0 +1,33 @@
+@model IEnumerable<BookLibrary.ViewModels.CategoryViewModel>
+
+@{
+    ViewData["Title"] = "Categories";
+}
+
+<div class="d-flex justify-content-between mb-3">
+    <h2>Categories</h2>
+    <a asp-action="Create" class="btn btn-primary">+ Add Category</a>
+</div>
+
+<table class="table table-hover">
+    <thead class="table-dark">
+        <tr><th>Name</th><th>Description</th><th>Books</th><th></th></tr>
+    </thead>
+    <tbody>
+        @foreach (var cat in Model)
+        {
+            <tr>
+                <td>@cat.Name</td>
+                <td>@(cat.Description ?? "—")</td>
+                <td>@cat.BookCount</td>
+                <td class="text-end">
+                    <a asp-action="Edit" asp-route-id="@cat.Id" class="btn btn-sm btn-outline-warning">Edit</a>
+                    <form asp-action="Delete" asp-route-id="@cat.Id" method="post" style="display:inline"
+                          onsubmit="return confirm('Delete @cat.Name?')">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
