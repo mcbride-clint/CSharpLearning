@@ -1,6 +1,6 @@
 # Book Library — ASP.NET Core Learning Project
 
-A hands-on reference project built with **ASP.NET Core 8**, combining an MVC web app and a REST API in a single solution. Every file is written as a teaching artifact: the code works, and the comments explain *why* each pattern exists — not just *what* it does.
+A hands-on reference project built with **ASP.NET Core 8**, combining a Razor Pages web app and a REST API in a single solution. Every file is written as a teaching artifact: the code works, and the comments explain *why* each pattern exists — not just *what* it does.
 
 **Tech stack:** .NET 8 · C# 12 · EF Core 8 · SQLite · Bootstrap 5 · Swagger/OpenAPI
 
@@ -46,10 +46,20 @@ BookLibrary/
 ├── Services/                   ← Business logic (Scoped, Singleton, Transient demos)
 ├── Middleware/                 ← Custom request pipeline components
 │
-├── Controllers/                ← MVC controllers (Razor views, form handling)
+├── Pages/                      ← Razor Pages (.cshtml + .cshtml.cs pairs)
+│   ├── _ViewImports.cshtml     ← Global using/namespace/tag helper declarations
+│   ├── _ViewStart.cshtml       ← Sets default layout for all pages
+│   ├── Shared/
+│   │   ├── _Layout.cshtml      ← Master page template
+│   │   └── _ValidationScriptsPartial.cshtml
+│   ├── Index.cshtml/.cs        ← Dashboard (was HomeController.Index)
+│   ├── DiDemo.cshtml/.cs       ← DI lifetime demo (was HomeController.DiDemo)
+│   ├── Books/                  ← Book CRUD pages
+│   ├── Authors/                ← Author CRUD pages
+│   └── Categories/             ← Category CRUD pages
+│
 ├── ApiControllers/             ← REST API controllers (JSON, HTTP verbs)
-├── Views/                      ← Razor templates (.cshtml)
-├── ViewModels/                 ← Shapes for Razor views
+├── ViewModels/                 ← Shared shapes for Razor Pages and API
 ├── DTOs/                       ← Shapes for API request/response JSON
 │
 └── Patterns/
@@ -86,7 +96,7 @@ ASP.NET Core has a built-in DI container. You register components once; the fram
 | Scoped | [`LibraryService`](Services/LibraryService.cs), repositories | Must share the same `DbContext` instance within one request |
 | Transient | [`OperationIdService`](Services/OperationIdService.cs) | Generates a fresh `Guid` on every injection to prove it's a new instance |
 
-**Live demo:** Visit `/Home/DiDemo` — the page logs two `IOperationIdService` GUIDs (one from the constructor, one from `[FromServices]`) and shows they are different, proving the Transient lifetime creates a new instance per injection.
+**Live demo:** Visit `/DiDemo` — the page logs two `IOperationIdService` GUIDs (one from the constructor, one from `[FromServices]`) and shows they are different, proving the Transient lifetime creates a new instance per injection.
 
 > **Captive Dependency Warning:** Never inject a shorter-lived service into a longer-lived one. Injecting a Scoped service into a Singleton's constructor is the most common mistake — ASP.NET Core will throw `InvalidOperationException` at startup in Development mode to catch this.
 
@@ -193,8 +203,8 @@ Migrations are C# classes with `Up()` and `Down()` methods. EF Core tracks which
 Middleware components form a pipeline. Each component can do work *before* and *after* the next component runs — like Russian nesting dolls:
 
 ```
-Request:  Exception → Logging → StaticFiles → Routing → Controller
-Response: Exception ← Logging ← StaticFiles ← Routing ← Controller
+Request:  Exception → Logging → StaticFiles → Routing → Page
+Response: Exception ← Logging ← StaticFiles ← Routing ← Page
 ```
 
 ```csharp
@@ -203,7 +213,7 @@ public async Task InvokeAsync(HttpContext context)
     // BEFORE — runs on the way IN
     var sw = Stopwatch.StartNew();
 
-    await _next(context); // pass to next middleware/controller
+    await _next(context); // pass to next middleware/page
 
     // AFTER — runs on the way OUT
     sw.Stop();
@@ -231,61 +241,135 @@ public async Task InvokeAsync(HttpContext context, IStatisticsService stats)
 
 ---
 
-### 4. MVC Controllers
+### 4. Razor Pages
 
-**Start here:** [`Controllers/BooksController.cs`](Controllers/BooksController.cs)
+**Start here:** [`Pages/Books/Create.cshtml.cs`](Pages/Books/Create.cshtml.cs) and [`Pages/Books/Create.cshtml`](Pages/Books/Create.cshtml)
 
-MVC controllers handle browser requests and return HTML views. Key concepts:
+Razor Pages organise each URL as a self-contained pair of files:
+- **`Page.cshtml`** — the HTML template (the view)
+- **`Page.cshtml.cs`** — the `PageModel` class (the controller + view model combined)
 
-#### Conventional Routing
+#### File-System Routing
+
+Routes come from where the file lives in the `Pages/` folder — no route table needed:
 
 ```
-/{controller}/{action}/{id?}
-/Books/Edit/5  →  BooksController.Edit(id: 5)
+Pages/Index.cshtml          → /
+Pages/Books/Index.cshtml    → /Books or /Books/Index
+Pages/Books/Details.cshtml  → /Books/Details/{id}  (when @page "{id:int}")
+Pages/Books/Edit.cshtml     → /Books/Edit/{id}
 ```
 
-Configured in `Program.cs`:
+Compare to MVC's conventional route table:
 ```csharp
+// MVC — explicit route table
 app.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
+
+// Razor Pages — no route table; files are the routes
+app.MapRazorPages();
 ```
+
+#### Handler Methods
+
+MVC action methods are replaced by named handler methods based on the HTTP verb:
+
+```csharp
+// MVC Controller
+[HttpGet]  public IActionResult Edit(int id) { ... }
+[HttpPost] public IActionResult Edit(int id, BookFormViewModel vm) { ... }
+
+// Razor Pages PageModel — same logic, different naming convention
+public async Task<IActionResult> OnGetAsync(int id) { ... }
+public async Task<IActionResult> OnPostAsync(int id) { ... }
+```
+
+#### [BindProperty] — Replacing [Bind(...)]
+
+MVC used `[Bind("Title,AuthorId,...")]` on an action parameter to whitelist safe form fields (over-posting protection). Razor Pages uses `[BindProperty]` on a property — only properties marked with it are bound from a POST:
+
+```csharp
+// MVC — whitelist on the parameter
+public IActionResult Create([Bind("Title,AuthorId,CategoryId")] BookFormViewModel vm) { }
+
+// Razor Pages — opt-in on the property (all other properties on PageModel are never bound)
+[BindProperty]
+public BookFormViewModel Book { get; set; } = new();
+```
+
+In the view, field names now reflect the property path on the PageModel:
+
+```html
+<!-- MVC view: @model BookFormViewModel — asp-for maps to the model directly -->
+<input asp-for="Title" />           <!-- generates name="Title" -->
+
+<!-- Razor Pages view: model IS the PageModel — use the full property path -->
+<input asp-for="Book.Title" />      <!-- generates name="Book.Title" -->
+```
+
+#### Named POST Handlers
+
+One page can handle multiple POST actions via named handlers:
+
+```csharp
+// Handler method named OnPost + "Delete" + Async
+public async Task<IActionResult> OnPostDeleteAsync(int id) { ... }
+```
+
+```html
+<!-- Form targets the named handler via asp-page-handler -->
+<form asp-page-handler="Delete" asp-route-id="@book.Id" method="post">
+    <button type="submit">Delete</button>
+</form>
+<!-- Posts to: /Books?handler=Delete&id=5 -->
+```
+
+#### Automatic Anti-Forgery
+
+In MVC, every POST action needed `[ValidateAntiForgeryToken]`. Razor Pages validates the anti-forgery token automatically on all POST handlers — no attribute needed.
 
 #### Post-Redirect-Get (PRG)
 
-After a successful form submission, always **redirect** rather than returning a view. This prevents the browser "re-submit form?" dialog when the user refreshes.
+The same PRG pattern applies — use `RedirectToPage` instead of `RedirectToAction`:
 
 ```csharp
-[HttpPost, ValidateAntiForgeryToken]
-public async Task<IActionResult> Create(BookFormViewModel vm)
-{
-    if (!ModelState.IsValid)
-        return View(vm); // re-show form with errors
+// MVC
+TempData["SuccessMessage"] = "Book added!";
+return RedirectToAction(nameof(Index));
 
-    await _library.CreateBookAsync(book);
-    TempData["SuccessMessage"] = "Book added!"; // survives one redirect
-    return RedirectToAction(nameof(Index));      // ← PRG redirect
-}
+// Razor Pages
+TempData["SuccessMessage"] = "Book added!";
+return RedirectToPage("./Index");  // relative to the current page's folder
 ```
 
-#### ModelState Validation
+#### Tag Helpers
 
-`[Required]`, `[MaxLength]`, `[Range]` annotations on your ViewModel are checked automatically before your action runs. `ModelState.IsValid` is `false` if any fail.
+Navigation tag helpers change from `asp-controller`/`asp-action` to `asp-page`:
 
-#### Over-Posting Protection
+```html
+<!-- MVC -->
+<a asp-controller="Books" asp-action="Edit" asp-route-id="@book.Id">Edit</a>
+
+<!-- Razor Pages -->
+<a asp-page="./Edit" asp-route-id="@book.Id">Edit</a>
+```
+
+Forms post back to the current page without any attributes:
+
+```html
+<!-- Razor Pages form — posts to the current page URL automatically -->
+<!-- Anti-forgery token is injected by the tag helper automatically -->
+<form method="post">
+    <input asp-for="Book.Title" class="form-control" />
+    <button type="submit">Save</button>
+</form>
+```
+
+#### Page() vs View()
 
 ```csharp
-// [Bind] whitelist — only these properties are bound from the form POST
-// Without this, a malicious user could POST extra fields (e.g., IsAdmin=true)
-public IActionResult Create([Bind("Title,AuthorId,CategoryId,Price")] BookFormViewModel vm)
+return Page();    // Razor Pages — renders the .cshtml paired with this PageModel
+return View(vm);  // MVC — renders a named view and passes a separate ViewModel
 ```
-
-#### TempData vs ViewBag vs ViewData
-
-| | Scope | Type-safe? | Use for |
-|--|-------|-----------|---------|
-| `TempData` | Survives ONE redirect | No | Success/error messages after PRG |
-| `ViewBag` | Current request only | No (dynamic) | Small, quick data to views |
-| `ViewData` | Current request only | No | Same as ViewBag, dictionary syntax |
-| ViewModel | Current request only | **Yes** | Preferred for structured view data |
 
 ---
 
@@ -293,12 +377,12 @@ public IActionResult Create([Bind("Title,AuthorId,CategoryId,Price")] BookFormVi
 
 **Start here:** [`ApiControllers/BooksApiController.cs`](ApiControllers/BooksApiController.cs)
 
-API controllers return JSON, not HTML. They differ from MVC controllers in several ways:
+API controllers return JSON, not HTML. They differ from Razor Pages in several ways:
 
 ```csharp
 [ApiController]           // ← key difference
 [Route("api/books")]
-public class BooksApiController : ControllerBase  // ControllerBase, not Controller
+public class BooksApiController : ControllerBase  // ControllerBase, not PageModel
 ```
 
 **What `[ApiController]` gives you for free:**
@@ -329,34 +413,34 @@ public IActionResult Get(
 
 ---
 
-### 6. Razor Views & Tag Helpers
+### 6. Razor Syntax & Tag Helpers
 
-**Start here:** [`Views/Books/Create.cshtml`](Views/Books/Create.cshtml), [`Views/Shared/_Layout.cshtml`](Views/Shared/_Layout.cshtml)
+**Start here:** [`Pages/Books/Create.cshtml`](Pages/Books/Create.cshtml), [`Pages/Shared/_Layout.cshtml`](Pages/Shared/_Layout.cshtml)
 
 Razor is a template syntax that mixes C# and HTML. Code blocks use `@{ }`, expressions use `@`.
 
 #### Tag Helpers
 
-Tag Helpers replace `Html.BeginForm()` and `Html.TextBoxFor()` with natural HTML-like syntax:
+Tag Helpers replace raw HTML attributes with intelligent, model-aware syntax:
 
 ```html
-<!-- Generates correct href from controller/action names -->
-<a asp-controller="Books" asp-action="Edit" asp-route-id="@book.Id">Edit</a>
+<!-- Generates correct href from the page path -->
+<a asp-page="/Books/Edit" asp-route-id="@book.Id">Edit</a>
 
-<!-- Generates <form method="post" action="/Books/Create"> + CSRF token -->
-<form asp-action="Create">
+<!-- Generates <form method="post"> + CSRF token automatically -->
+<form method="post">
 
-<!-- Generates <input type="text" name="Title" id="Title" value="..." data-val="..."> -->
-<input asp-for="Title" class="form-control" />
+<!-- Generates <input type="text" name="Book.Title" data-val="..."> -->
+<input asp-for="Book.Title" class="form-control" />
 
 <!-- Renders [Display(Name="Book Title")] from the ViewModel annotation -->
-<label asp-for="Title" class="form-label"></label>
+<label asp-for="Book.Title" class="form-label"></label>
 
-<!-- Shows validation error message for Title -->
-<span asp-validation-for="Title" class="text-danger"></span>
+<!-- Shows validation error message for Book.Title -->
+<span asp-validation-for="Book.Title" class="text-danger"></span>
 
 <!-- Populates <select> options from a SelectList -->
-<select asp-for="AuthorId" asp-items="Model.Authors"></select>
+<select asp-for="Book.AuthorId" asp-items="Model.Book.Authors"></select>
 ```
 
 #### XSS Safety
@@ -365,13 +449,13 @@ Razor HTML-encodes all output by default. `@book.Title` renders `&lt;script&gt;`
 
 #### Layout Inheritance
 
-`_Layout.cshtml` is the page template. `@RenderBody()` is where each view's content is inserted. Views can push content to named sections:
+`_Layout.cshtml` is the page template. `@RenderBody()` is where each page's content is inserted. Pages can push content to named sections:
 
 ```html
 <!-- In _Layout.cshtml -->
 @await RenderSectionAsync("Scripts", required: false)
 
-<!-- In a view -->
+<!-- In a page -->
 @section Scripts {
     <script src="~/lib/jquery-validation/jquery.validate.min.js"></script>
 }
@@ -406,7 +490,7 @@ Guard.AgainstNonPositive(book.AuthorId, nameof(book.AuthorId));
 
 #### Strategy Pattern
 **Files:** [`Patterns/Strategy/`](Patterns/Strategy/)
-**Used in:** [`Controllers/BooksController.cs`](Controllers/BooksController.cs) — `?sort=` query param
+**Used in:** [`Pages/Books/Index.cshtml.cs`](Pages/Books/Index.cshtml.cs) — `?sort=` query param
 
 Define a family of algorithms, encapsulate each one, and make them interchangeable. The caller doesn't care *how* sorting works — just *that* it does.
 
@@ -427,7 +511,7 @@ Try it: `/Books?sort=author`, `/Books?sort=year`, `/Books?sort=price`
 
 #### Builder Pattern
 **Files:** [`Patterns/Builder/BookSearchQueryBuilder.cs`](Patterns/Builder/BookSearchQueryBuilder.cs)
-**Used in:** [`Controllers/BooksController.cs`](Controllers/BooksController.cs), [`ApiControllers/BooksApiController.cs`](ApiControllers/BooksApiController.cs)
+**Used in:** [`Pages/Books/Index.cshtml.cs`](Pages/Books/Index.cshtml.cs), [`ApiControllers/BooksApiController.cs`](ApiControllers/BooksApiController.cs)
 
 Construct complex objects step by step using a fluent interface. Avoids unreadable constructors with many optional parameters.
 
@@ -494,7 +578,7 @@ string output = formatter.Format(books);
 return File(bytes, formatter.ContentType, $"export.{formatter.FileExtension}");
 ```
 
-Try it: [`/api/books/export?format=csv`](http://localhost:5171/api/books/export?format=csv) · [`/api/books/export?format=json`](http://localhost:5171/api/books/export?format=json)
+Try it: `/api/books/export?format=csv` · `/api/books/export?format=json`
 
 ---
 
@@ -551,7 +635,7 @@ Configure which levels appear in `appsettings.json`. The project enables EF Core
 | Singleton lifetime | [`Services/StatisticsService.cs`](Services/StatisticsService.cs) |
 | Scoped lifetime | [`Services/LibraryService.cs`](Services/LibraryService.cs), [`Repositories/BookRepository.cs`](Repositories/BookRepository.cs) |
 | Transient lifetime | [`Services/OperationIdService.cs`](Services/OperationIdService.cs) |
-| Live DI demo | [`Controllers/HomeController.cs`](Controllers/HomeController.cs) → `/Home/DiDemo` |
+| Live DI demo | [`Pages/DiDemo.cshtml.cs`](Pages/DiDemo.cshtml.cs) → `/DiDemo` |
 | DbContext | [`Data/LibraryDbContext.cs`](Data/LibraryDbContext.cs) |
 | Eager loading | [`Repositories/BookRepository.cs`](Repositories/BookRepository.cs) |
 | Fluent API | [`Data/LibraryDbContext.cs`](Data/LibraryDbContext.cs) |
@@ -559,10 +643,13 @@ Configure which levels appear in `appsettings.json`. The project enables EF Core
 | Middleware pipeline | [`Program.cs`](Program.cs) |
 | Before/after pipeline | [`Middleware/RequestLoggingMiddleware.cs`](Middleware/RequestLoggingMiddleware.cs) |
 | Global error handling | [`Middleware/GlobalExceptionMiddleware.cs`](Middleware/GlobalExceptionMiddleware.cs) |
-| MVC routing | [`Controllers/BooksController.cs`](Controllers/BooksController.cs) |
-| PRG pattern | [`Controllers/BooksController.cs`](Controllers/BooksController.cs) → `Create` POST |
+| Razor Pages routing | [`Pages/Books/Index.cshtml`](Pages/Books/Index.cshtml) |
+| PageModel / OnGet / OnPost | [`Pages/Books/Create.cshtml.cs`](Pages/Books/Create.cshtml.cs) |
+| [BindProperty] | [`Pages/Books/Create.cshtml.cs`](Pages/Books/Create.cshtml.cs) |
+| Named POST handlers | [`Pages/Books/Index.cshtml.cs`](Pages/Books/Index.cshtml.cs) → `OnPostDeleteAsync` |
+| PRG pattern | [`Pages/Books/Create.cshtml.cs`](Pages/Books/Create.cshtml.cs) → `OnPostAsync` |
 | Model validation | [`ViewModels/BookViewModel.cs`](ViewModels/BookViewModel.cs) |
-| Tag Helpers | [`Views/Books/Create.cshtml`](Views/Books/Create.cshtml) |
+| Tag Helpers (asp-page) | [`Pages/Books/Create.cshtml`](Pages/Books/Create.cshtml) |
 | REST API | [`ApiControllers/BooksApiController.cs`](ApiControllers/BooksApiController.cs) |
 | Guard Clauses | [`Patterns/GuardClauses/Guard.cs`](Patterns/GuardClauses/Guard.cs) |
 | Strategy Pattern | [`Patterns/Strategy/`](Patterns/Strategy/) |
@@ -581,8 +668,9 @@ Configure which levels appear in `appsettings.json`. The project enables EF Core
 5. **`Services/LibraryService.cs`** — see business rules and why services exist
 6. **`Services/StatisticsService.cs`** — understand the Singleton lifetime
 7. **`Middleware/RequestLoggingMiddleware.cs`** — understand the pipeline model
-8. **`Controllers/BooksController.cs`** — see the full MVC CRUD cycle
-9. **`ApiControllers/BooksApiController.cs`** — compare REST to MVC
-10. **`Patterns/` directory** — explore each pattern with its before/after examples
-11. **Visit `/Home/DiDemo`** in the browser — observe DI lifetimes live
-12. **Run the app with the console open** — watch EF Core print SQL for every query
+8. **`Pages/Books/Index.cshtml.cs`** — see the full Razor Pages CRUD cycle (list + delete)
+9. **`Pages/Books/Create.cshtml.cs` + `Create.cshtml`** — see `[BindProperty]`, `OnGet/OnPost`, and the PRG pattern
+10. **`ApiControllers/BooksApiController.cs`** — compare REST API controllers to Razor Pages
+11. **`Patterns/` directory** — explore each pattern with its before/after examples
+12. **Visit `/DiDemo`** in the browser — observe DI lifetimes live
+13. **Run the app with the console open** — watch EF Core print SQL for every query
