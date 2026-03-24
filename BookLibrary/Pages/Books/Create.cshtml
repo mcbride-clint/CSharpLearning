@@ -1,0 +1,109 @@
+@page
+@model CreateModel
+@{
+    ViewData["Title"] = "Add Book";
+}
+
+<h2>Add a New Book</h2>
+
+@*
+    RAZOR PAGES FORMS:
+    <form method="post"> (no asp-action needed — the page posts back to itself).
+    The anti-forgery token is injected automatically by the <form> tag helper.
+
+    asp-for="Book.Title":
+      In MVC views the model WAS BookFormViewModel, so asp-for="Title" worked.
+      In Razor Pages the model IS the PageModel (CreateModel), so we reference
+      the property path: Book.Title (where Book is the [BindProperty] on CreateModel).
+      This generates: name="Book.Title" id="Book_Title"
+*@
+
+<div class="row">
+    <div class="col-md-7">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="mb-3">
+                <label asp-for="Book.Title" class="form-label"></label>
+                <input asp-for="Book.Title" class="form-control" />
+                <span asp-validation-for="Book.Title" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Book.AuthorId" class="form-label"></label>
+                <select asp-for="Book.AuthorId" asp-items="Model.Book.Authors" class="form-select">
+                    <option value="">— Select an author —</option>
+                </select>
+                <span asp-validation-for="Book.AuthorId" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Book.CategoryId" class="form-label"></label>
+                <select asp-for="Book.CategoryId" asp-items="Model.Book.Categories" class="form-select">
+                    <option value="">— Select a category —</option>
+                </select>
+                <span asp-validation-for="Book.CategoryId" class="text-danger small"></span>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Book.PublishedYear" class="form-label"></label>
+                    <input asp-for="Book.PublishedYear" class="form-control" type="number" />
+                    <span asp-validation-for="Book.PublishedYear" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Book.PageCount" class="form-label"></label>
+                    <input asp-for="Book.PageCount" class="form-control" type="number" />
+                    <span asp-validation-for="Book.PageCount" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Book.ISBN" class="form-label"></label>
+                    <input asp-for="Book.ISBN" class="form-control" />
+                    <span asp-validation-for="Book.ISBN" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Book.Price" class="form-label"></label>
+                    <input asp-for="Book.Price" class="form-control" type="number" step="0.01" />
+                    <span asp-validation-for="Book.Price" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Book.Description" class="form-label"></label>
+                <textarea asp-for="Book.Description" class="form-control" rows="3"></textarea>
+            </div>
+
+            <div class="form-check mb-3">
+                <input asp-for="Book.IsAvailable" class="form-check-input" />
+                <label asp-for="Book.IsAvailable" class="form-check-label"></label>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Add Book</button>
+                <a asp-page="./Index" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+    <div class="col-md-5">
+        <div class="card bg-light">
+            <div class="card-body small">
+                <h6>What's Happening Here?</h6>
+                <ul>
+                    <li><strong>GET /Books/Create</strong>: OnGetAsync populates dropdowns and returns the empty form.</li>
+                    <li><strong>POST /Books/Create</strong>: Model binder maps form fields to <code>Book</code> (the <code>[BindProperty]</code>).</li>
+                    <li><code>ModelState.IsValid</code> runs all <code>[Required]</code>, <code>[Range]</code> etc. validators.</li>
+                    <li>On success: POST → redirect → GET (PRG pattern prevents double-submit).</li>
+                    <li>Anti-forgery token is injected and validated automatically — no <code>[ValidateAntiForgeryToken]</code> attribute needed.</li>
+                    <li><code>[BindProperty]</code> opts in only the <code>Book</code> property for form binding — other PageModel properties are never over-posted.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

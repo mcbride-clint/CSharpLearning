@@ -1,0 +1,113 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Books";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Books</h2>
+    @*
+        asp-page="./Create": navigates to Pages/Books/Create.cshtml.
+        Replaces: asp-controller="Books" asp-action="Create"
+    *@
+    <a asp-page="./Create" class="btn btn-primary">+ Add Book</a>
+</div>
+
+@* ---- SEARCH AND SORT CONTROLS ---- *@
+<form method="get" class="row g-2 mb-3">
+    @*
+        GET form: submits filter values as query string parameters.
+        No anti-forgery token needed (GET is idempotent / read-only).
+        The ?search=...&sort=... values are bound to OnGetAsync parameters.
+    *@
+    <div class="col-md-5">
+        <input type="text" name="search" class="form-control"
+               placeholder="Search by title..." value="@Model.CurrentSearch" />
+    </div>
+    <div class="col-md-4">
+        <select name="sort" class="form-select" asp-items="@Model.SortOptions">
+            <option value="">— Sort by —</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-outline-secondary w-100">Filter</button>
+    </div>
+    @if (!string.IsNullOrEmpty(Model.CurrentSearch) || Model.CurrentSort != null)
+    {
+        <div class="col-md-1">
+            <a asp-page="./Index" class="btn btn-outline-danger w-100" title="Clear">✕</a>
+        </div>
+    }
+</form>
+
+@if (!Model.Books.Any())
+{
+    <div class="alert alert-info">No books found. <a asp-page="./Create">Add one!</a></div>
+}
+else
+{
+    <table class="table table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Category</th>
+                <th>Year</th>
+                <th>Price</th>
+                <th>Available</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var book in Model.Books)
+            {
+                <tr>
+                    <td>@book.Title</td>
+                    <td>@book.AuthorName</td>
+                    <td>@book.CategoryName</td>
+                    <td>@book.PublishedYear</td>
+                    <td>@book.Price.ToString("C")</td>
+                    <td>
+                        @if (book.IsAvailable)
+                        {
+                            <span class="badge bg-success">Yes</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">No</span>
+                        }
+                    </td>
+                    <td class="text-end">
+                        @*
+                            asp-page="./Details" asp-route-id="@book.Id"
+                            Generates: href="/Books/Details/5"   (because Details uses @page "{id:int}")
+
+                            Replaces MVC: asp-action="Details" asp-route-id="@book.Id"
+                        *@
+                        <a asp-page="./Details" asp-route-id="@book.Id"
+                           class="btn btn-sm btn-outline-info">Details</a>
+                        <a asp-page="./Edit" asp-route-id="@book.Id"
+                           class="btn btn-sm btn-outline-warning">Edit</a>
+
+                        @*
+                            NAMED HANDLER DELETE FORM:
+                            asp-page-handler="Delete" → POSTs to ?handler=Delete
+                            The framework routes this to OnPostDeleteAsync(int id).
+
+                            Anti-forgery token is injected automatically by the
+                            <form> tag helper when method="post" — no [ValidateAntiForgeryToken]
+                            attribute needed on the handler.
+
+                            Replaces MVC: asp-action="Delete" asp-route-id="@book.Id"
+                        *@
+                        <form asp-page-handler="Delete" asp-route-id="@book.Id"
+                              method="post" style="display:inline"
+                              onsubmit="return confirm('Delete @book.Title?')">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

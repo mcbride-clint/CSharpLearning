@@ -1,0 +1,21 @@
+@using BookLibrary
+@using BookLibrary.Models
+@using BookLibrary.ViewModels
+@namespace BookLibrary.Pages
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@*
+    _ViewImports.cshtml — applied to all Razor Pages in this folder and subfolders.
+
+    @namespace BookLibrary.Pages:
+      Sets the base C# namespace for auto-generated page classes.
+      Pages in Pages/ use BookLibrary.Pages.
+      Pages in Pages/Books/ use BookLibrary.Pages.Books (subdirectory appended automatically).
+      Each PageModel code-behind file must declare a matching namespace.
+
+    @addTagHelper:
+      Makes Tag Helpers available in all pages (asp-page, asp-for, asp-route-*, etc.)
+      Without this, Tag Helpers are just plain text — no HTML generation.
+
+    Compared to MVC:
+      MVC had Views/_ViewImports.cshtml. This file plays the exact same role for Razor Pages.
+*@

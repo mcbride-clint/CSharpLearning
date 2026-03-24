@@ -1,0 +1,38 @@
+@page "{id:int}"
+@model EditModel
+@{
+    ViewData["Title"] = "Edit Author";
+}
+
+<h2>Edit Author</h2>
+<div class="col-md-6">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+        <div class="mb-3">
+            <label asp-for="Author.FirstName" class="form-label"></label>
+            <input asp-for="Author.FirstName" class="form-control" />
+            <span asp-validation-for="Author.FirstName" class="text-danger small"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Author.LastName" class="form-label"></label>
+            <input asp-for="Author.LastName" class="form-control" />
+            <span asp-validation-for="Author.LastName" class="text-danger small"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Author.BirthDate" class="form-label"></label>
+            <input asp-for="Author.BirthDate" class="form-control" type="date" />
+        </div>
+        <div class="mb-3">
+            <label asp-for="Author.Biography" class="form-label"></label>
+            <textarea asp-for="Author.Biography" class="form-control" rows="4"></textarea>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-warning">Save Changes</button>
+            <a asp-page="./Index" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

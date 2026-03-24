@@ -1,0 +1,125 @@
+@page
+@model IndexModel
+@*
+    @page: REQUIRED on every Razor Page. Marks this file as a Razor Page (not an MVC view).
+    Without @page, ASP.NET Core treats this as a plain Razor view.
+
+    In Razor Pages the @model directive is optional — the framework automatically sets
+    it to the matching PageModel class (IndexModel, found in Index.cshtml.cs).
+
+    ACCESSING DATA:
+      MVC view: @ViewBag.TotalRequests  (dynamic, no compile-time checking)
+      Razor Page: @Model.TotalRequests  (strongly typed, IDE autocomplete works)
+*@
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="row mb-4">
+    <div class="col">
+        <h1>Book Library — Learning Project</h1>
+        <p class="lead text-muted">
+            An ASP.NET Core 8 Razor Pages + REST API teaching project demonstrating DI,
+            EF Core, Middleware, and common design patterns.
+        </p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <strong>Singleton — StatisticsService</strong>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    <strong>Total Requests:</strong> @Model.TotalRequests<br />
+                    <strong>Uptime:</strong> @Model.UptimeSeconds seconds<br />
+                    <strong>Started:</strong> @Model.StartedAt.ToString("HH:mm:ss")<br />
+                    <strong>OperationId:</strong> <code class="small">@Model.ControllerOperationId</code>
+                </p>
+                <p class="card-text text-muted small">
+                    Refresh the page — the counter increments every request.
+                    StatisticsService is <strong>Singleton</strong>: one instance shared
+                    across all requests for the app's entire lifetime.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header"><strong>Quick Navigation</strong></div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <h6>Razor Pages</h6>
+                        <ul class="small">
+                            @*
+                                asp-page: the Razor Pages equivalent of asp-controller + asp-action.
+                                The path is relative to the Pages/ folder root.
+                                "/Books/Index" → Pages/Books/Index.cshtml → URL /Books
+                            *@
+                            <li><a asp-page="/Books/Index">Books list</a> — EF Core, Strategy sort</li>
+                            <li><a asp-page="/Books/Create">Add a book</a> — Builder query, validation</li>
+                            <li><a asp-page="/Authors/Index">Authors</a> — Business rules</li>
+                            <li><a asp-page="/Categories/Index">Categories</a></li>
+                            <li><a asp-page="/DiDemo">DI Demo</a> — Lifetime comparison</li>
+                        </ul>
+                    </div>
+                    <div class="col-6">
+                        <h6>REST API</h6>
+                        <ul class="small">
+                            <li><a href="/swagger" target="_blank">Swagger UI</a></li>
+                            <li><a href="/api/books" target="_blank">GET /api/books</a></li>
+                            <li><a href="/api/books/export?format=csv" target="_blank">Export CSV</a></li>
+                            <li><a href="/api/books/export?format=json" target="_blank">Export JSON</a></li>
+                            <li><a href="/api/books/search?title=dune" target="_blank">Search API</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+        <h5>What This Project Teaches</h5>
+        <div class="row">
+            <div class="col-md-4">
+                <h6 class="text-primary">ASP.NET Core</h6>
+                <ul class="small">
+                    <li>DI lifetimes (Singleton / Scoped / Transient)</li>
+                    <li>Middleware pipeline &amp; ordering</li>
+                    <li>Razor Pages — PageModel, OnGet/OnPost, BindProperty</li>
+                    <li>REST API controllers vs Razor Pages</li>
+                    <li>Razor Tag Helpers &amp; validation</li>
+                    <li>Configuration &amp; structured logging</li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h6 class="text-success">EF Core</h6>
+                <ul class="small">
+                    <li>DbContext (Scoped lifetime)</li>
+                    <li>Eager loading with .Include()</li>
+                    <li>AsNoTracking() for read-only queries</li>
+                    <li>LINQ-to-SQL translation</li>
+                    <li>Migrations, Fluent API, seed data</li>
+                    <li>SaveChangesAsync() as commit</li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h6 class="text-warning">Design Patterns</h6>
+                <ul class="small">
+                    <li>Guard Clauses</li>
+                    <li>Strategy (sort algorithms)</li>
+                    <li>Builder (fluent search query)</li>
+                    <li>Decorator (transparent caching)</li>
+                    <li>Factory (report formatters)</li>
+                    <li>Repository &amp; PRG pattern</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

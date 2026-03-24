@@ -35,15 +35,24 @@ var builder = WebApplication.CreateBuilder(args);
 //   - Enables environment variables and command-line args as config sources
 
 // =============================================================================
-// SECTION 1: MVC + RAZOR VIEWS
+// SECTION 1: RAZOR PAGES + API CONTROLLERS
 // =============================================================================
-// AddControllersWithViews registers all the infrastructure for:
-//   - MVC Controllers (action methods, model binding, filters)
-//   - Razor Views (template rendering, Tag Helpers)
+// AddRazorPages registers all the infrastructure for:
+//   - Razor Pages (PageModel, OnGet/OnPost handlers, @page directive)
+//   - Razor view rendering, Tag Helpers, Antiforgery (auto on all POSTs)
 //   - Data Annotations validation
-//   - Antiforgery token generation ([ValidateAntiForgeryToken])
 //   - ILogger<T> factory (any class can inject ILogger<T> for free)
-builder.Services.AddControllersWithViews();
+//
+// AddControllers registers MVC controller infrastructure WITHOUT Razor Views.
+//   Used here for the REST API controllers in ApiControllers/ only.
+//   API controllers use [ApiController] + attribute routing and don't render views.
+//
+// Razor Pages vs MVC Controllers:
+//   MVC:          AddControllersWithViews() + MapControllerRoute("default", ...)
+//   Razor Pages:  AddRazorPages()           + MapRazorPages()
+//   API only:     AddControllers()          + MapControllers()
+builder.Services.AddRazorPages();
+builder.Services.AddControllers(); // API controllers only (ApiControllers/)
 
 // AddEndpointsApiExplorer + AddSwaggerGen: enables Swagger/OpenAPI documentation.
 // Swagger generates an interactive UI at /swagger where you can test API endpoints.
@@ -213,14 +222,16 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// 8. MAP CONTROLLERS:
-//    Conventional routing: maps /{controller}/{action}/{id?} for MVC controllers.
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
-
-//    Attribute routing: maps [Route("api/[controller]")] on API controllers.
-app.MapControllers();
+// 8. MAP ENDPOINTS:
+//    MapRazorPages: routes file-system-based Razor Pages (Pages/ folder).
+//      Pages/Index.cshtml        → /
+//      Pages/Books/Index.cshtml  → /Books or /Books/Index
+//      Pages/Books/Edit.cshtml   → /Books/Edit/{id} (from @page "{id:int}")
+//
+//    MapControllers: routes API controllers via [Route("api/[controller]")] attributes.
+//      No conventional route table needed — each API endpoint declares its own route.
+app.MapRazorPages();
+app.MapControllers(); // API controllers (ApiControllers/)
 
 // =============================================================================
 // SECTION 7: DATABASE INITIALIZATION
